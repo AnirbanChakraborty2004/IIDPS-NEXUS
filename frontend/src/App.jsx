@@ -3,31 +3,21 @@ import DashboardTab from './components/DashboardTab';
 import AlertsTab from './components/AlertsTab';
 import SettingsTab from './components/SettingsTab';
 import QuickActionsTab from './components/QuickActionsTab';
-import { Shield, LayoutDashboard, Bell, BarChart2, Settings, Zap } from 'lucide-react';
+import LinkCheckerTab from './components/LinkCheckerTab';
+import { Shield, LayoutDashboard, Bell, BarChart2, Settings, Zap, Link2 } from 'lucide-react';
 import './index.css';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'alerts',    label: 'Alerts',    icon: Bell },
   { id: 'quick',     label: 'Quick',     icon: Zap },
-  { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+  { id: 'links',     label: 'Links',     icon: Link2 },
   { id: 'settings',  label: 'Settings',  icon: Settings },
 ];
-
-const SETTINGS_DEFAULTS = {
-  sensitivity: 80,
-  autoBlock: true,
-  voiceAssistant: true,
-  alertSound: true,
-  emailNotif: false,
-};
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isConnected] = useState(true);
-
-  // Lifted settings state — survives tab switches
-  const [savedSettings, setSavedSettings] = useState({ ...SETTINGS_DEFAULTS });
 
   return (
     <div className="app-container min-h-screen flex flex-col text-gray-200">
@@ -74,22 +64,16 @@ function App() {
       </header>
 
       {/* ── MOBILE TOP BAR ── */}
-      <header className="md:hidden flex w-full items-center justify-between px-6 pt-5 pb-3 relative z-20">
-        <div className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-[#00f0ff] shrink-0" />
-          <h1 className="text-sm font-bold header-title m-0 tracking-[0.2em] whitespace-nowrap">
-            IIDPS NEXUS
-          </h1>
+      <header className="md:hidden flex items-center justify-between px-4 pt-4 pb-2 relative z-20">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-[#00f0ff]" />
+          <h1 className="text-base header-title m-0 tracking-widest">IIDPS NEXUS</h1>
         </div>
-        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${
-              isConnected
-                ? 'bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse'
-                : 'bg-red-500'
-            }`}
-          />
-          <span className="text-[10px] text-gray-300 font-mono font-medium tracking-widest leading-none">
+        <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10">
+          <div className={`w-2 h-2 rounded-full ${isConnected
+            ? 'bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse'
+            : 'bg-red-500'}`}></div>
+          <span className="text-xs text-gray-300 font-mono tracking-wider">
             {isConnected ? 'SECURE' : 'OFFLINE'}
           </span>
         </div>
@@ -102,17 +86,9 @@ function App() {
         {activeTab === 'dashboard' && <DashboardTab />}
         {activeTab === 'alerts'    && <AlertsTab />}
         {activeTab === 'quick'     && <QuickActionsTab />}
-        {activeTab === 'analytics' && (
-          <div className="glass-panel flex items-center justify-center text-gray-500 min-h-[400px]">
-            Analytics Module (Coming Soon)
-          </div>
-        )}
-        {activeTab === 'settings' && (
-          <SettingsTab
-            savedSettings={savedSettings}
-            onSave={(newSettings) => setSavedSettings(newSettings)}
-          />
-        )}
+        {activeTab === 'links'     && <LinkCheckerTab />}
+
+        {activeTab === 'settings'  && <SettingsTab />}
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
