@@ -1,74 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import DashboardTab from './components/DashboardTab';
+import AlertsTab from './components/AlertsTab';
+import SettingsTab from './components/SettingsTab';
+import QuickActionsTab from './components/QuickActionsTab';
+import { Shield, LayoutDashboard, Bell, BarChart2, Settings, Zap } from 'lucide-react';
 import './index.css';
-import { WS_URL } from './services/api';
-import Dashboard from './components/Dashboard';
-import VoicePanel from './components/VoicePanel';
+
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'alerts',    label: 'Alerts',    icon: Bell },
+  { id: 'quick',     label: 'Quick',     icon: Zap },
+  { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+  { id: 'settings',  label: 'Settings',  icon: Settings },
+];
+
+const SETTINGS_DEFAULTS = {
+  sensitivity: 80,
+  autoBlock: true,
+  voiceAssistant: true,
+  alertSound: true,
+  emailNotif: false,
+};
 
 function App() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [alerts, setAlerts] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isConnected] = useState(true);
 
-  useEffect(() => {
-    // Establish WebSocket Connection
-    const ws = new WebSocket(WS_URL);
-
-    ws.onopen = () => {
-      console.log('Connected to IIDPS WebSockets');
-      setIsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'IP_BLOCKED') {
-        setAlerts(prev => [data.data, ...prev].slice(0, 50)); // Keep last 50
-      }
-    };
-
-    ws.onclose = () => {
-      console.log('Disconnected from WebSockets');
-      setIsConnected(false);
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, []);
+  // Lifted settings state — survives tab switches
+  const [savedSettings, setSavedSettings] = useState({ ...SETTINGS_DEFAULTS });
 
   return (
-    <div className="app-container">
-      <header className="header">
-        <h1>IIDPS // NEXUS</h1>
-        <div className="status-indicator">
-          <div className="dot" style={{ backgroundColor: isConnected ? '#10b981' : '#ef4444', boxShadow: isConnected ? '0 0 10px #10b981' : '0 0 10px #ef4444' }}></div>
-          {isConnected ? 'SYSTEM ONLINE' : 'CONNECTION LOST'}
+    <div className="app-container min-h-screen flex flex-col text-gray-200">
+
+      {/* ── DESKTOP HEADER (hidden on mobile) ── */}
+      <header className="hidden md:flex glass-panel mb-6 mx-4 mt-4 lg:mx-8 lg:mt-6
+                         flex-col md:flex-row justify-between items-center px-6 py-4 relative z-20">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-[#00f0ff]" />
+          <h1 className="text-2xl header-title m-0">IIDPS // NEXUS v1.0</h1>
+        </div>
+
+        {/* Desktop Tabs */}
+        <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium
+                          transition-all duration-300 capitalize
+                          ${activeTab === id
+                            ? 'bg-blue-600/30 text-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full border border-white/5">
+            <div className={`w-2.5 h-2.5 rounded-full ${isConnected
+              ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]'
+              : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
+            <span className="text-gray-300 font-medium tracking-wide">
+              {isConnected ? 'ACTIVE' : 'OFFLINE'}
+            </span>
+          </div>
+          <div className="hidden lg:block text-gray-400 font-mono">
+            Uptime: 3h 24m | User: Admin
+          </div>
         </div>
       </header>
 
-      <main className="main-grid">
-        <div className="left-column">
-          <Dashboard />
-          
-          <div className="panel" style={{ marginTop: '20px' }}>
-            <h2>Real-Time Threat Feed</h2>
-            <ul className="alert-list">
-              {alerts.length === 0 ? (
-                <li style={{ color: '#94a3b8', padding: '10px' }}>No active threats detected.</li>
-              ) : (
-                alerts.map((alert, idx) => (
-                  <li key={idx} className="alert-item">
-                    <span className="alert-time">{new Date(alert.timestamp).toLocaleTimeString()}</span>
-                    <strong>{alert.ip}</strong> blocked - {alert.reason}
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
+      {/* ── MOBILE TOP BAR ── */}
+      <header className="md:hidden flex w-full items-center justify-between px-6 pt-5 pb-3 relative z-20">
+        <div className="flex items-center gap-3">
+          <Shield className="w-5 h-5 text-[#00f0ff] shrink-0" />
+          <h1 className="text-sm font-bold header-title m-0 tracking-[0.2em] whitespace-nowrap">
+            IIDPS NEXUS
+          </h1>
         </div>
+        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              isConnected
+                ? 'bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse'
+                : 'bg-red-500'
+            }`}
+          />
+          <span className="text-[10px] text-gray-300 font-mono font-medium tracking-widest leading-none">
+            {isConnected ? 'SECURE' : 'OFFLINE'}
+          </span>
+        </div>
+      </header>
 
-        <div className="right-column">
-          <VoicePanel />
-        </div>
+      {/* ── MAIN CONTENT ── */}
+      <main className="flex-1 w-full relative z-10
+                       px-4 pb-24 md:pb-6 md:px-4 lg:px-8
+                       pt-0 md:pt-0">
+        {activeTab === 'dashboard' && <DashboardTab />}
+        {activeTab === 'alerts'    && <AlertsTab />}
+        {activeTab === 'quick'     && <QuickActionsTab />}
+        {activeTab === 'analytics' && (
+          <div className="glass-panel flex items-center justify-center text-gray-500 min-h-[400px]">
+            Analytics Module (Coming Soon)
+          </div>
+        )}
+        {activeTab === 'settings' && (
+          <SettingsTab
+            savedSettings={savedSettings}
+            onSave={(newSettings) => setSavedSettings(newSettings)}
+          />
+        )}
       </main>
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30
+                      bg-[#050a14]/90 backdrop-blur-xl
+                      border-t border-[#00f0ff]/10
+                      flex items-center justify-around
+                      px-2 py-2 safe-area-bottom">
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
+                        transition-all duration-200 min-w-[56px]
+                        ${activeTab === id
+                          ? 'text-[#00f0ff]'
+                          : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <div className={`relative p-1.5 rounded-lg transition-all duration-200
+                            ${activeTab === id
+                              ? 'bg-[#00f0ff]/10 shadow-[0_0_12px_rgba(0,240,255,0.2)]'
+                              : ''}`}>
+              <Icon className="w-5 h-5" />
+              {id === 'alerts' && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full
+                                 shadow-[0_0_6px_#ef4444]"></span>
+              )}
+            </div>
+            <span className={`text-[9px] font-bold tracking-wider uppercase
+                             ${activeTab === id ? 'text-[#00f0ff]' : 'text-gray-600'}`}>
+              {label}
+            </span>
+          </button>
+        ))}
+      </nav>
+
     </div>
   );
 }
